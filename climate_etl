@@ -1,0 +1,46 @@
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.dynamicframe import DynamicFrame
+from pyspark.sql import functions as F
+
+# Obtener opciones configuradas
+args = getResolvedOptions(sys.argv, ["JOB_NAME"])
+
+# Configurar el contexto de Spark y Glue
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+
+# Parámetros
+raw_data_path = "s3://cmblandonltrabajo1/raw/"  # Reemplaza con la ruta de tu bucket S3
+trusted_data_path = "s3://cmblandonltrabajo1/trusted/"  # Reemplaza con la ruta de tu bucket S3
+
+# Crear un DynamicFrame desde el directorio "raw"
+raw_data = glueContext.create_dynamic_frame.from_catalog(
+    database="workshop",
+    table_name="raw"
+)
+
+# Obtener el esquema del DynamicFrame
+schema = raw_data.schema()
+
+# Identificar las columnas con valores nulos
+columns_with_nulls = [field.name for field in schema.fields if raw_data.toDF().filter(F.col(field.name).isNull()).count() > 0]
+
+# Seleccionar las columnas que NO tienen valores nulos
+columns_to_keep = [field.name for field in schema.fields if field.name not in columns_with_nulls]
+
+# Seleccionar solo las columnas deseadas
+transformed_data = raw_data.select_fields(columns_to_keep)
+
+# Crear un DynamicFrame con los datos transformados
+trusted_data = DynamicFrame.fromDF(transformed_data.toDF(), glueContext, "trusted_data")
+
+# Convertir DynamicFrame a DataFrame para escribir en formato CSV
+trusted_data_df = transformed_data.toDF()
+
+# Escribir el DataFrame en formato CSV en el directorio "trusted"
+trusted_data_df.write.option("header", "true").csv(trusted_data_path, mode="overwrite")
