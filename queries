@@ -1,0 +1,39 @@
+/** Seleccionar datos y ordenarlos por topic **/
+SELECT topic, stance
+FROM trusted
+WHERE stance = 'believer'
+ORDER BY topic;
+
+/** Seleccionar datos de género donde genero es indefinido **/
+SELECT COUNT(gender) AS genero
+FROM raw
+WHERE gender = 'undefined'
+
+/** Eliminar datos duplicados **/
+SELECT distinct(topic), stance
+FROM trusted
+WHERE stance = 'believer'
+ORDER BY topic;
+
+/** Promedio de columna sentimient **/
+SELECT AVG(CAST(sentiment AS double)) AS promedio_sentimiento
+FROM tu_tabla
+WHERE gender = 'female';
+
+/** Promedio de columna agrupada por genero **/
+SELECT gender, AVG(CAST(sentiment AS double)) AS promedio_sentimiento
+FROM raw
+GROUP BY gender;
+
+/**  lista tel promedio de sentiment para cada genero. sólo incluye los promedios por genero cuyo promedio es mayor a 0.001 **/
+SELECT AVG(CAST(sentiment AS double)) AS promedio_sentimiento, gender
+FROM raw
+GROUP BY gender
+HAVING AVG(sentiment) > 0.001;
+
+/**  lista tel promedio de sentiment para cada genero. sólo incluye los promedios por genero cuyo promedio es mayor a 0.001 y los ordena de mayor a menor**/
+SELECT AVG(CAST(sentiment AS double)) AS promedio_sentimiento, gender
+FROM raw
+GROUP BY gender
+HAVING AVG(sentiment) > 0.001
+ORDER BY AVG(sentiment) DESC;
